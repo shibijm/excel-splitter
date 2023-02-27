@@ -1,0 +1,22 @@
+name: Build and release
+run-name: Build and release ${{ inputs.version || github.ref_name }}
+on:
+  push:
+    tags:
+      - v*
+  workflow_dispatch:
+    inputs:
+      version:
+        required: true
+        type: string
+        description: Version (vX.X.X.X)
+jobs:
+  build-go-release:
+    uses: shibijm/gh-actions-workflows/.github/workflows/build-go-release-preset-1.yml@master
+    with:
+      version: ${{ inputs.version || github.ref_name }}
+      preBuildCommand: sudo apt install gcc pkg-config libwayland-dev libx11-dev libx11-xcb-dev libxkbcommon-x11-dev libgles2-mesa-dev libegl1-mesa-dev libffi-dev libxcursor-dev libvulkan-dev
+      executableFilename: ExcelSplitter
+      isGuiApp: true
+    permissions:
+      contents: write
