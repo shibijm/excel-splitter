@@ -40,7 +40,7 @@ type MainWindow struct {
 
 func NewMainWindow(excelService *services.ExcelService) *MainWindow {
 	window := app.NewWindow(
-		app.Title("ExcelSplitter"),
+		app.Title("Excel Splitter"),
 		app.Size(600, 250),
 	)
 	theme := material.NewTheme(gofont.Collection())

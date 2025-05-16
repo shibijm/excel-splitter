@@ -86,7 +86,7 @@ func (excelService *ExcelService) SplitByColumn(sheet string, splitColumnIndex i
 	excelService.dispatchStatus("Reading rows")
 	rows, err := excelService.file.Rows(sheet)
 	if err != nil {
-		return fmt.Errorf("failed to get rows: %w", err)
+		return fmt.Errorf("failed to get rows iterator: %w", err)
 	}
 	re, err := regexp.Compile(`[^\w]`)
 	if err != nil {
@@ -103,7 +103,7 @@ func (excelService *ExcelService) SplitByColumn(sheet string, splitColumnIndex i
 		rowIndex++
 		row, err := rows.Columns(excelize.Options{RawCellValue: true})
 		if err != nil {
-			return fmt.Errorf("failed to get row: %w", err)
+			return fmt.Errorf("failed to read row %d: %w", rowIndex+1, err)
 		}
 		if rowIndex == 0 {
 			headerRow = row
@@ -136,14 +136,14 @@ func (excelService *ExcelService) SplitByColumn(sheet string, splitColumnIndex i
 		if len(row) > splitColumnIndex {
 			value = re.ReplaceAllString(row[splitColumnIndex], " ")
 		}
-		if len(value) == 0 {
+		if value == "" {
 			value = "Blank"
 		}
 		newRow := []interface{}{}
 		for columnIndex, cell := range row {
 			cellType := cellTypes[columnIndex]
 			var newCell interface{}
-			if len(cell) == 0 {
+			if cell == "" {
 				newCell = nil
 			} else if cellType == excelize.CellTypeNumber || cellType == excelize.CellTypeUnset {
 				cellFloat, err := strconv.ParseFloat(cell, 64)
@@ -171,7 +171,7 @@ func (excelService *ExcelService) SplitByColumn(sheet string, splitColumnIndex i
 			newRows[value] = [][]interface{}{newRow}
 		}
 	}
-	if rowIndex == 0 {
+	if rowIndex < 1 {
 		return errors.New("sheet has no data")
 	}
 	for value, rows := range newRows {
