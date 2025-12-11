@@ -7,8 +7,6 @@ import (
 	"time"
 
 	"gioui.org/app"
-	"gioui.org/font/gofont"
-	"gioui.org/io/system"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/unit"
@@ -39,11 +37,9 @@ type MainWindow struct {
 }
 
 func NewMainWindow(excelService *services.ExcelService) *MainWindow {
-	window := app.NewWindow(
-		app.Title("Excel Splitter"),
-		app.Size(600, 250),
-	)
-	theme := material.NewTheme(gofont.Collection())
+	window := new(app.Window)
+	window.Option(app.Title("Excel Splitter"), app.Size(600, 250))
+	theme := material.NewTheme()
 	exp := explorer.NewExplorer(window)
 	mainWindow := &MainWindow{
 		window:            window,
@@ -76,18 +72,15 @@ func (mainWindow *MainWindow) setError(err error) {
 	mainWindow.status = fmt.Sprintf("Error: %s", err)
 }
 
-func (mainWindow *MainWindow) Run() error {
-	for e := range mainWindow.window.Events() {
-		switch e := e.(type) {
-		case system.DestroyEvent:
-			err := mainWindow.excelService.DisposeFileIfLoaded()
-			if err != nil {
-				return err
-			}
-			return e.Err
-		case system.FrameEvent:
-			ctx := layout.NewContext(&mainWindow.ops, e)
-			err := mainWindow.handleEvents()
+func (mainWindow *MainWindow) Run() {
+	for {
+		switch e := mainWindow.window.Event().(type) {
+		case app.DestroyEvent:
+			mainWindow.excelService.DisposeFileIfLoaded()
+			return
+		case app.FrameEvent:
+			ctx := app.NewContext(&mainWindow.ops, e)
+			err := mainWindow.handleEvents(ctx)
 			if err != nil {
 				mainWindow.setError(err)
 			}
@@ -98,11 +91,10 @@ func (mainWindow *MainWindow) Run() error {
 			e.Frame(ctx.Ops)
 		}
 	}
-	return nil
 }
 
-func (mainWindow *MainWindow) handleEvents() error {
-	if mainWindow.openButton.Clicked() {
+func (mainWindow *MainWindow) handleEvents(ctx layout.Context) error {
+	if mainWindow.openButton.Clicked(ctx) {
 		err := mainWindow.excelService.DisposeFileIfLoaded()
 		if err != nil {
 			return err
@@ -126,7 +118,7 @@ func (mainWindow *MainWindow) handleEvents() error {
 		mainWindow.status = "Excel file selected"
 	}
 	for i := range mainWindow.sheetButtons {
-		if mainWindow.sheetButtons[i].Clicked() {
+		if mainWindow.sheetButtons[i].Clicked(ctx) {
 			mainWindow.resetColumns()
 			mainWindow.currentSheetIndex = i
 			sheet := mainWindow.sheets[i]
@@ -140,7 +132,7 @@ func (mainWindow *MainWindow) handleEvents() error {
 		}
 	}
 	for i := range mainWindow.columnButtons {
-		if mainWindow.columnButtons[i].Clicked() {
+		if mainWindow.columnButtons[i].Clicked(ctx) {
 			mainWindow.currentColumnIndex = i
 			sheet := mainWindow.sheets[mainWindow.currentSheetIndex]
 			mainWindow.disabled = true

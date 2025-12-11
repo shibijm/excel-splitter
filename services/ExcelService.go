@@ -216,22 +216,18 @@ func (excelService *ExcelService) SplitByColumn(sheet string, splitColumnIndex i
 			return fmt.Errorf("failed to set style of row 1: %w", err)
 		}
 		lastColumnName, _ := excelize.ColumnNumberToName(len(headerRow))
-		file.AutoFilter(outputSheet, "A1", fmt.Sprintf("%s%d", lastColumnName, len(rows)+1), "")
-		file.SetPanes(outputSheet, `{
-			"freeze": true,
-			"split": false,
-			"x_split": 0,
-			"y_split": 1,
-			"top_left_cell": "A2",
-			"active_pane": "bottomLeft",
-			"panes": [
-				{
-					"sqref": "A2",
-					"active_cell": "A2",
-					"pane": "bottomLeft"
-				}
-			]
-		}`)
+		file.AutoFilter(outputSheet, fmt.Sprintf("%s%d", lastColumnName, len(rows)+1), nil)
+		file.SetPanes(outputSheet, &excelize.Panes{
+			Freeze:      true,
+			Split:       false,
+			XSplit:      0,
+			YSplit:      1,
+			TopLeftCell: "A2",
+			ActivePane:  "bottomLeft",
+			Selection: []excelize.Selection{
+				{SQRef: "A2", ActiveCell: "A2", Pane: "bottomLeft"},
+			},
+		})
 		err = os.MkdirAll(splitColumn, 0777)
 		if err != nil {
 			return fmt.Errorf("failed to create output directory: %w", err)
